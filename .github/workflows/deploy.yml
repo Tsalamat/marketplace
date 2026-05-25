@@ -190,6 +190,7 @@ jobs:
             --set components.frontend.image.repository="${{ needs.build.outputs.frontend_image }}" \
             --set components.frontend.image.tag="${{ needs.build.outputs.image_tag }}" \
             --set imagePullSecrets[0].name=ghcr-pull-secret \
+            --set certManager.clusterIssuer.create=false \
             --wait \
             --timeout 10m
 
