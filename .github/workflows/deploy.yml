@@ -181,6 +181,15 @@ jobs:
             --kubeconfig "$HOME/.kube/config"
           kubectl config current-context
 
+      - name: Install Prometheus Operator CRDs
+        run: |
+          helm show crds ./my_project/charts/kube-prometheus-stack-*.tgz \
+            | kubectl apply --server-side --force-conflicts -f -
+          kubectl wait --for=condition=Established --timeout=120s crd/alertmanagers.monitoring.coreos.com
+          kubectl wait --for=condition=Established --timeout=120s crd/prometheuses.monitoring.coreos.com
+          kubectl wait --for=condition=Established --timeout=120s crd/prometheusrules.monitoring.coreos.com
+          kubectl wait --for=condition=Established --timeout=120s crd/servicemonitors.monitoring.coreos.com
+
       - name: Create namespace
         run: kubectl create namespace "${KUBE_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 
