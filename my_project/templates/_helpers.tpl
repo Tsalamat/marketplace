@@ -75,3 +75,14 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Resolve a secret value while preserving the live value on upgrades.
+*/}}
+{{- define "my_project.secretValue" -}}
+{{- if and .secret .secret.data (hasKey .secret.data .key) -}}
+{{- index .secret.data .key | b64dec -}}
+{{- else -}}
+{{- .value -}}
+{{- end -}}
+{{- end }}

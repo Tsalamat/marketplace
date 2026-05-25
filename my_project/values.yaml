@@ -20,6 +20,44 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
+appSecrets:
+  create: true
+  name: kazgiu-app-secrets
+  data:
+    DB_PASSWORD: smpassword
+    REDIS_PASSWORD: redispassword
+    JWT_ACCESS_SECRET: change-me-access-secret-min-32-chars
+    JWT_REFRESH_SECRET: change-me-refresh-secret-min-32-chars
+    MINIO_USER: minioadmin
+    MINIO_PASSWORD: minioadmin123
+    SMTP_USER: ""
+    SMTP_PASS: ""
+    GOOGLE_CLIENT_ID_WEB: ""
+    GOOGLE_CLIENT_SECRET_WEB: ""
+
+dependencies:
+  postgres:
+    enabled: true
+    image: postgres:16-alpine
+    database: studentmarketplace
+    username: smuser
+    storageSize: 10Gi
+    service:
+      port: 5432
+  redis:
+    enabled: true
+    image: redis:7-alpine
+    storageSize: 2Gi
+    service:
+      port: 6379
+  minio:
+    enabled: true
+    image: minio/minio:latest
+    storageSize: 20Gi
+    service:
+      apiPort: 9000
+      consolePort: 9001
+
 components:
   frontend:
     enabled: true
