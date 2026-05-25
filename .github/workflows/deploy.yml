@@ -23,6 +23,7 @@ env:
   REGISTRY: ghcr.io
   AWS_REGION: us-east-1
   EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   ci:
@@ -62,6 +63,11 @@ jobs:
 
       - name: Setup Helm
         uses: azure/setup-helm@v4
+
+      - name: Build Helm dependencies
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm dependency build ./my_project
 
       - name: Lint Helm chart
         run: helm lint ./my_project
@@ -142,6 +148,11 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
+      - name: Build Helm dependencies
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm dependency build ./my_project
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -180,6 +191,17 @@ jobs:
             --docker-username="${{ secrets.GHCR_USERNAME }}" \
             --docker-password="${{ secrets.GHCR_TOKEN }}" \
             --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Configure Grafana admin secret
+        run: |
+          kubectl -n "${KUBE_NAMESPACE}" create secret generic kazgiu-grafana-admin \
+            --from-literal=admin-user="${{ secrets.GRAFANA_ADMIN_USER }}" \
+            --from-literal=admin-password="${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Remove legacy ingress for kazgiu domain
+        run: |
+          kubectl -n default delete ingress todo-ingress --ignore-not-found
 
       - name: Deploy Helm release
         run: |

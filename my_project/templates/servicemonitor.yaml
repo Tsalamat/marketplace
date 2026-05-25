@@ -1,0 +1,19 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "my_project.componentFullname" (dict "root" . "component" "backend") }}
+  labels:
+    {{- include "my_project.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "my_project.componentSelectorLabels" (dict "root" . "component" "backend") | nindent 6 }}
+  endpoints:
+    - port: http
+      path: {{ .Values.monitoring.serviceMonitor.path }}
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.monitoring.serviceMonitor.scrapeTimeout }}
+{{- end }}

@@ -19,6 +19,7 @@ import (
 
 	"student-marketplace/internal/config"
 	"student-marketplace/internal/handlers"
+	"student-marketplace/internal/metrics"
 	"student-marketplace/internal/middleware"
 	"student-marketplace/internal/models"
 	wsHub "student-marketplace/internal/websocket"
@@ -104,6 +105,7 @@ func main() {
 	})
 
 	app.Use(recover.New())
+	app.Use(metrics.Middleware())
 	app.Use(logger.New(logger.Config{Format: "[${time}] ${status} ${method} ${path} ${latency}\n"}))
 	app.Use(helmet.New())
 	app.Use(compress.New())
@@ -137,6 +139,7 @@ func main() {
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok", "version": "1.0.0"})
 	})
+	app.Get("/metrics", metrics.Handler)
 
 	// ── Auth ──────────────────────────────────────────────────
 	auth := api.Group("/auth")
