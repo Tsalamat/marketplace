@@ -1,0 +1,85 @@
+{{- $root := . -}}
+{{- range $componentName, $component := .Values.components }}
+{{- if $component.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my_project.componentFullname" (dict "root" $root "component" $componentName) }}
+  labels:
+    {{- include "my_project.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $componentName }}
+spec:
+  {{- if not $root.Values.autoscaling.enabled }}
+  replicas: {{ default $root.Values.replicaCount $component.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "my_project.componentSelectorLabels" (dict "root" $root "component" $componentName) | nindent 6 }}
+  template:
+    metadata:
+      {{- with $root.Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "my_project.componentSelectorLabels" (dict "root" $root "component" $componentName) | nindent 8 }}
+        {{- with $root.Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with $root.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "my_project.serviceAccountName" $root }}
+      {{- with $root.Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ $componentName }}
+          {{- with $root.Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ $component.image.repository }}:{{ $component.image.tag | default $root.Chart.AppVersion }}"
+          imagePullPolicy: {{ $component.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $component.service.targetPort | default $component.service.port }}
+              protocol: TCP
+          {{- with $component.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $component.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $component.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $component.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $component.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with $root.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $root.Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $root.Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- end }}

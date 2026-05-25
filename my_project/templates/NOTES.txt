@@ -1,0 +1,12 @@
+Application:
+{{- range .Values.ingress.hosts }}
+  https://{{ .host }}
+{{- end }}
+
+Ingress class: {{ .Values.ingress.className }}
+TLS secret: {{ .Values.ingress.tls.secretName }}
+ClusterIssuer: {{ .Values.certManager.clusterIssuer.name }}
+
+Check rollout:
+  kubectl -n {{ .Release.Namespace }} get ingress,certificate,challenge,order
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}

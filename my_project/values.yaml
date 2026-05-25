@@ -1,0 +1,159 @@
+domain: kazgiu.404tears.kz
+
+replicaCount: 1
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+components:
+  frontend:
+    enabled: true
+    image:
+      repository: social_project_frontend
+      tag: "2"
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 3000
+      targetPort: 3000
+    env:
+      - name: VITE_API_URL
+        value: "https://kazgiu.404tears.kz"
+      - name: VITE_WS_URL
+        value: "wss://kazgiu.404tears.kz"
+    resources: {}
+    readinessProbe:
+      httpGet:
+        path: /
+        port: http
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    livenessProbe:
+      httpGet:
+        path: /
+        port: http
+      initialDelaySeconds: 20
+      periodSeconds: 20
+
+  backend:
+    enabled: true
+    image:
+      repository: social_project_backend
+      tag: "1"
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 8080
+      targetPort: 8080
+    env:
+      - name: APP_ENV
+        value: production
+      - name: APP_PORT
+        value: "8080"
+      - name: FRONTEND_URL
+        value: "https://kazgiu.404tears.kz"
+      - name: DB_HOST
+        value: postgres
+      - name: DB_PORT
+        value: "5432"
+      - name: DB_NAME
+        value: studentmarketplace
+      - name: DB_USER
+        value: smuser
+      - name: REDIS_HOST
+        value: redis
+      - name: REDIS_PORT
+        value: "6379"
+      - name: MINIO_ENDPOINT
+        value: minio:9000
+      - name: MINIO_BUCKET
+        value: student-marketplace
+      - name: MINIO_USE_SSL
+        value: "false"
+      - name: MINIO_PUBLIC_URL
+        value: "https://kazgiu.404tears.kz/minio"
+      - name: GOOGLE_CALLBACK_URL
+        value: "https://kazgiu.404tears.kz/api/v1/auth/google/callback"
+    envFrom:
+      - secretRef:
+          name: kazgiu-app-secrets
+          optional: true
+    resources: {}
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 20
+      periodSeconds: 20
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  tls:
+    enabled: true
+    secretName: kazgiu-404tears-tls
+  hosts:
+    - host: kazgiu.404tears.kz
+      paths:
+        - path: /api
+          pathType: Prefix
+          component: backend
+        - path: /ws
+          pathType: Prefix
+          component: backend
+        - path: /health
+          pathType: Prefix
+          component: backend
+        - path: /
+          pathType: Prefix
+          component: frontend
+
+certManager:
+  clusterIssuer:
+    create: true
+    name: letsencrypt-prod
+    email: admin@404tears.kz
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretName: letsencrypt-prod-account-key
+    ingressClassName: nginx
+  certificate:
+    create: true
+    name: kazgiu-404tears-tls
+    secretName: kazgiu-404tears-tls
+    dnsNames:
+      - kazgiu.404tears.kz
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+httpRoute:
+  enabled: false

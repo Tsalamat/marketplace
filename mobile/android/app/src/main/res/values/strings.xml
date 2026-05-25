@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Web client ID — used by google_sign_in to get verifiable ID tokens -->
+    <string name="default_web_client_id">465189960437-itqcdqv0o4b2cgdn4saqvhveke10at8k.apps.googleusercontent.com</string>
+</resources>
